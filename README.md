@@ -38,13 +38,26 @@ Two kinds of registry appeared in the pipeline these notes come from.
 
 **Known false-positive patterns.** A registry of chains for which an earlier false-positive filter had been too aggressive, and had been removing records that should have been kept. For each entry the incident documented a specific record that had been incorrectly removed and reinstated.
 
-## Rules carry their own history
+Here is an actual entry from the registry's universal section, copied verbatim:
 
-The structural property that makes a registry pay off is that each rule is not just a correction but a correction with provenance. A reader who encounters the rule a year later can look at the incident reference and reconstruct why the rule is there. The reconstruction is cheap because the incident is a specific record, usually a specific identifier, that can be inspected directly.
+```yaml
+universal_keeps:
+  # Credit unions are a legitimate sub-category, not a miscat of bank/atm.
+  - business_category_id: credit_union
+    rationale: "credit_union is a legitimate sub-category under bank/atm/financial_institution; not miscat"
+```
 
-This matters more than it sounds. A pipeline whose rules are opaque is a pipeline whose rules decay. An operator who does not know why a rule is there is one small refactor away from removing it as "unused" and reintroducing the defect the rule was there to prevent. A pipeline whose rules carry their incidents cannot easily lose that history.
+Three lines plus a one-line rationale and a one-line comment above the block. The rationale is terse on purpose: its job is to explain the keep-decision at reading time so a reviewer who did not write the rule can tell whether to trust it.
 
-The alternative, a changelog or a wiki, fails because the link between a rule in code and its justification elsewhere is implicit. Six months later nobody remembers the wiki page exists.
+Scope note on this format: this is the universal-rules section, where each entry carries its own rationale. Per-brand entries are grouped under the brand key and share a group-level comment rather than an entry-level one. Specific incident references with dates and the record that caused the rule live in separate operator notes, not in the YAML or git history.
+
+## Rules carry their rationale
+
+The structural property that makes a registry pay off is that most rules carry their rationale alongside them, so a reader who encounters the rule later can tell whether it is still right. In the registry these notes come from, that rationale lives in two shapes: a one-line comment above each group of rules, and a per-entry `rationale` field in the universal section. Specific incident references, the record that caused the rule, the operator who caught it, the date, live in separate operator notes outside the YAML and the git history, so a reader who needs them has to go look rather than scroll.
+
+This matters more than it sounds. A pipeline whose rules are opaque is a pipeline whose rules decay. An operator who does not know why a rule is there is one small refactor away from removing it as "unused" and reintroducing the defect the rule was there to prevent. A pipeline whose rules carry their intent, even just a short comment per group, makes that intent durable in a way bare rules do not.
+
+The alternative, a changelog or a wiki with no link back to the code, fails because the connection between a rule and its justification is implicit. Six months later nobody remembers the wiki page exists.
 
 ## Market context as structured input, not as prompt
 
