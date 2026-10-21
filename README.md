@@ -18,7 +18,7 @@ The reflex places this knowledge in one of three locations: an onboarding docume
 
 **Operator heads are a single point of failure.** The rule works until the operator who holds it leaves or forgets. The next person starts over.
 
-The pattern that works is a fourth location: a registry of executable rules, each carrying with it the incident that caused the rule to be written, consulted by the pipeline before the language model is called.
+The pattern that works is a fourth location: a registry of executable rules, each carrying with it the reasoning that caused the rule to be written, consulted by the pipeline before the language model is called.
 
 ## Executable registries
 
@@ -26,17 +26,17 @@ A registry is a module whose public interface is one function: does any rule in 
 
 - the predicate that decides whether the rule applies to a given record
 - the correction the rule prescribes if it does
-- the identifier of the originating incident
-- the date the rule was added
-- a short natural-language note describing the incident, which the pipeline logs when the rule fires
+- a short natural-language rationale: why the rule exists and what it is correcting for
 
-The registry is called before the language model. If a rule matches, the pipeline applies the correction, writes the incident identifier to the audit log, and does not call the model for that record. If no rule matches, the record proceeds to the model.
+A fuller version of the pattern also stamps each rule with the identifier and date of the incident that produced it, and [`example.py`](example.py) implements it that way to show the shape. The registry these notes come from did not go that far. It carried the rationale, and incident references lived in operator notes outside the repository. The scope note below says exactly where each kind of rule falls.
+
+The registry is called before the language model. If a rule matches, the pipeline applies the correction, writes the rule's identity and rationale to the audit log, and does not call the model for that record. If no rule matches, the record proceeds to the model.
 
 Two kinds of registry appeared in the pipeline these notes come from.
 
-**Known miscategorisations.** A registry of chains and categories that had been mis-tagged a specific way by upstream classifiers, with the corrected classification. For each entry the originating incident documented a specific record where the mis-tagging had been caught, and the reasoning for the correction.
+**Known miscategorisations.** A registry of chains and categories that had been mis-tagged a specific way by upstream classifiers, with the corrected classification. The rationale records what the mis-tagging looked like and the reasoning for the correction.
 
-**Known false-positive patterns.** A registry of chains for which an earlier false-positive filter had been too aggressive, and had been removing records that should have been kept. For each entry the incident documented a specific record that had been incorrectly removed and reinstated.
+**Known false-positive patterns.** A registry of chains for which an earlier false-positive filter had been too aggressive, and had been removing records that should have been kept. The rationale records the shape of record that was being removed and why it should be kept.
 
 Here is an actual entry from the registry's universal section, copied verbatim:
 
@@ -73,7 +73,7 @@ The context record is a configuration file, not a sentence embedded in a prompt.
 
 Not every record can be resolved by a registry and not every record should be handed to a language model. Some records require a human judgement call that no amount of local knowledge can shortcut.
 
-The pattern that worked is an archetype attached to the record at intake time. A record whose archetype is "requires human review" skips every automation layer and goes straight to a punch-list for the operator to look at by hand. The archetype is derived from signals that are deterministic — the presence of specific metadata, the absence of required fields, the collision with a known structural pattern — and once set, no later layer may override it.
+The pattern that worked is an archetype attached to the record at intake time. A record whose archetype is "requires human review" skips every automation layer and goes straight to a punch-list for the operator to look at by hand. The archetype is derived from signals that are deterministic: the presence of specific metadata, the absence of required fields, the collision with a known structural pattern. Once set, no later layer may override it.
 
 Example archetypes from the pipeline these notes come from:
 
@@ -85,7 +85,7 @@ The archetype is not a verdict. It is a declaration that this specific shape of 
 
 ## What is not in a registry
 
-A registry is a storage format for rules learned from past cases. It is not a format for rules that will apply to future cases that are novel in some way. New patterns go through the language model and the sampling audit. The registry grows when a pattern recurs often enough to be worth hand-coding, and when the incident that would motivate the rule has actually happened. Writing a rule in anticipation of a case that has not happened is premature; the registry fills with speculative rules that decay the way onboarding documents do.
+A registry is a storage format for rules learned from past cases. It is not a format for rules that will apply to future cases that are novel in some way. New patterns go through the language model and the sampling audit. The registry grows when a pattern recurs often enough to be worth hand-coding, and when the case that would motivate the rule has actually occurred. Writing a rule in anticipation of a case that has not happened is premature; the registry fills with speculative rules that decay the way onboarding documents do.
 
 A good indicator that a rule should move from "model-handled" to "registry-handled" is that the same correction has been applied by different operators across different runs on different records of the same chain or category. At that point the pattern is specific enough to encode.
 
@@ -93,7 +93,7 @@ A good indicator that a rule should move from "model-handled" to "registry-handl
 
 A registry is as good as its coverage of the cases it has seen. A new case the registry has not seen will still require the language model, and the language model is still what the companion write-up describes.
 
-A rule in the registry that becomes wrong, because the upstream data source changed, because the real-world pattern changed, has to be retired. The incident reference helps: a reader who inspects the originating record can tell whether the correction still applies to the record as it exists today.
+A rule in the registry that becomes wrong, because the upstream data source changed, because the real-world pattern changed, has to be retired. The rationale helps: a reader who can see why the rule was written can tell whether the correction still applies to the data as it exists today.
 
 Registries also need their own form of review. A rule that fires on a record is a decision; a rule that fires on many records has an outsized effect. The pipeline logs every rule hit, and a periodic audit counts hits per rule and flags rules whose hit rate has jumped suddenly, which usually indicates an upstream change rather than a true pattern.
 
